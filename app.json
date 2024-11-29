@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "newArchEnabled": true,
+    "name": "WEA",
+    "slug": "WEA",
+    "version": "1.0.0",
+    "icon": "./assets/WEA.png",
+    "splash": {
+      "image": "./assets/WEA.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "android": {
+      "package": "com.worldeventaccess.wea",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/WEA.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.worldeventaccess.weaios",
+      "buildNumber": "1.0.0"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "description": "WEA MANAGEMENT SYSTEM",
+    "extra": {
+      "eas": {
+        "projectId": "4d510dfb-9e36-4686-9fcb-ee210f50300d"
+      }
+    }
+  }
+}
