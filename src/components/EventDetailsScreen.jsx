@@ -1,10 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, ScrollView, Button, Alert, ProgressBarAndroid, TextInput } from 'react-native';
+import { 
+    View, 
+    Text, 
+    Image, 
+    ScrollView, 
+    TouchableOpacity, 
+    Alert, 
+    TextInput, 
+    ActivityIndicator,
+    StyleSheet,
+    Platform
+} from 'react-native';
+import styles from '../styles/eventStyles';
 import * as FileSystem from 'expo-file-system';
 import axios from 'axios';
 import { fetchEventDetails } from '../api/eventService';
 import { API_TOKEN, BASE_URL } from '../api/config';
-import styles from '../styles/eventStyles';
 
 const EventDetailsScreen = ({ route, navigation }) => {
     const { eventId } = route.params;
@@ -39,10 +50,9 @@ const EventDetailsScreen = ({ route, navigation }) => {
         const filePath = `${FileSystem.documentDirectory}tickets_${eventId}.json`;
 
         try {
-            // Realiza la solicitud POST con el cuerpo que contiene passCode y eventId
             const response = await axios.post(
                 ticketUrl,
-                { passCode, eventId }, // cuerpo de la solicitud
+                { passCode, eventId },
                 {
                     headers: {
                         'Authorization': `Bearer ${API_TOKEN}`,
@@ -51,12 +61,10 @@ const EventDetailsScreen = ({ route, navigation }) => {
                 }
             );
 
-            // Verifica si la respuesta es exitosa y si contiene el array de tickets
             if (response.status !== 200 || !response.data || !response.data.eventTickets) {
                 throw new Error('Failed to fetch tickets');
             }
 
-            // Extrae el array de tickets de la respuesta
             const ticketsData = response.data.eventTickets;
             const jsonString = JSON.stringify(ticketsData, null, 2);
             await FileSystem.writeAsStringAsync(filePath, jsonString);
@@ -82,6 +90,7 @@ const EventDetailsScreen = ({ route, navigation }) => {
     if (!event) {
         return (
             <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#0000ff" />
                 <Text>Loading event details...</Text>
             </View>
         );
@@ -99,6 +108,7 @@ const EventDetailsScreen = ({ route, navigation }) => {
                     <Image
                         source={{ uri: `${BASE_URL}/PublicEventLogo/${event.id}` }}
                         style={styles.logo}
+                        resizeMode="contain"
                     />
                     <Text style={styles.title}>{event.name}</Text>
                     <Text style={styles.subtitle}>Organizer: {event.organizer}</Text>
@@ -130,11 +140,11 @@ const EventDetailsScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.section}>
-                    {downloadProgress > 0 && (
-                        <ProgressBarAndroid
-                            styleAttr="Horizontal"
-                            indeterminate={false}
-                            progress={downloadProgress / 100}
+                    {isLoading && (
+                        <ActivityIndicator 
+                            size="large" 
+                            color="#0000ff" 
+                            style={styles.progressIndicator}
                         />
                     )}
                     <TextInput
@@ -142,12 +152,20 @@ const EventDetailsScreen = ({ route, navigation }) => {
                         placeholder="Enter pass code"
                         value={passCode}
                         onChangeText={setPassCode}
+                        placeholderTextColor="#888"
                     />
-                    <Button 
-                        title={isLoading ? "Loading..." : "Download Tickets"} 
+                    <TouchableOpacity 
+                        style={[
+                            styles.downloadButton, 
+                            isLoading && styles.disabledButton
+                        ]}
                         onPress={fetchAndSaveTickets}
                         disabled={isLoading}
-                    />
+                    >
+                        <Text style={styles.downloadButtonText}>
+                            {isLoading ? "Loading..." : "Download Tickets"}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
         </View>

@@ -1,10 +1,19 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet, Image, TextInput, ScrollView } from 'react-native';
+import { 
+    View, 
+    Text, 
+    TouchableOpacity, 
+    Alert, 
+    StyleSheet, 
+    Image, 
+    TextInput, 
+    ScrollView,
+    Platform,
+    KeyboardAvoidingView
+} from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import moment from 'moment';
-import { BASE_URL, API_TOKEN } from '../api/config'
-
-
+import { BASE_URL, API_TOKEN } from '../api/config';
 
 const TicketDetails = ({ route }) => {
     const { ticket } = route.params;
@@ -250,75 +259,82 @@ const TicketDetails = ({ route }) => {
     };
 
     return (
-        <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
-            <Image
-                source={{ uri: userImage }}
-                style={styles.profileImage}
-                resizeMode="cover"
-            />
-            <View style={styles.infoContainer}>
-                <Text style={styles.infoText}>Event: {updatedTicket.title || 'N/A'}</Text>
-                <Text style={styles.infoText}>Name: {updatedTicket.firstName || 'N/A'}</Text>
-                <Text style={styles.infoText}>Last Name: {updatedTicket.lastName || 'N/A'}</Text>
-                <Text style={styles.infoText}>Email: {updatedTicket.email || 'N/A'}</Text>
-                <Text style={styles.infoText}>Rooms: {updatedTicket.rooms || 'N/A'}</Text>
-                <Text style={styles.infoText}>Dates: {updatedTicket.dates || 'N/A'}</Text>
-                <Text style={styles.infoText}>Pay with: {updatedTicket.paymentType || 'N/A'}</Text>
-                <Text style={styles.infoText}>Table seat: {1}</Text>
-                <Text style={styles.infoText}>Parking: {parkingMethod}</Text>
-                {ticket.checkIn && updatedTicket.parkingMethod !== 'None' && updatedTicket.parkingMethod !== '' && (
-                    <View>
-                        <Text style={styles.infoText}>Datos de Parqueo:</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Celda de parqueo"
-                            value={parkingSlot}
-                            onChangeText={setParkingSlot}
-                            readOnly={updatedTicket.checkOut}
-                        />
-                        {updatedTicket.parkingMethod === 'valet' && (
+        <KeyboardAvoidingView 
+            style={styles.scrollContainer}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+            <ScrollView 
+                style={styles.scrollContainer} 
+                contentContainerStyle={styles.contentContainer}
+                keyboardShouldPersistTaps="handled"
+            >
+                <Image
+                    source={{ uri: userImage }}
+                    style={styles.profileImage}
+                    resizeMode="cover"
+                />
+                <View style={styles.infoContainer}>
+                    <Text style={styles.infoText}>Event: {updatedTicket.title || 'N/A'}</Text>
+                    <Text style={styles.infoText}>Name: {updatedTicket.firstName || 'N/A'}</Text>
+                    <Text style={styles.infoText}>Last Name: {updatedTicket.lastName || 'N/A'}</Text>
+                    <Text style={styles.infoText}>Email: {updatedTicket.email || 'N/A'}</Text>
+                    <Text style={styles.infoText}>Rooms: {updatedTicket.rooms || 'N/A'}</Text>
+                    <Text style={styles.infoText}>Dates: {updatedTicket.dates || 'N/A'}</Text>
+                    <Text style={styles.infoText}>Pay with: {updatedTicket.paymentType || 'N/A'}</Text>
+                    <Text style={styles.infoText}>Table seat: {1}</Text>
+                    <Text style={styles.infoText}>Parking: {parkingMethod}</Text>
+                    {ticket.checkIn && updatedTicket.parkingMethod !== 'None' && updatedTicket.parkingMethod !== '' && (
+                        <View>
+                            <Text style={styles.infoText}>Datos de Parqueo:</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder="Ubicación de la llave"
-                                value={keySlot}
-                                onChangeText={setKeySlot}
-                                readOnly={updatedTicket.checkOut}
+                                placeholder="Celda de parqueo"
+                                value={parkingSlot}
+                                onChangeText={setParkingSlot}
+                                editable={!updatedTicket.checkOut}
                             />
-                        )}
-                        {!updatedTicket.checkOut && (
-                        <TouchableOpacity style={styles.button} onPress={handleSaveParkingData}>
-                            <Text style={styles.buttonText}>Guardar Datos de Parqueo</Text>
-                        </TouchableOpacity>
-                        )}
-                    </View>
-                )}
-            </View>
+                            {updatedTicket.parkingMethod === 'valet' && (
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Ubicación de la llave"
+                                    value={keySlot}
+                                    onChangeText={setKeySlot}
+                                    editable={!updatedTicket.checkOut}
+                                />
+                            )}
+                            {!updatedTicket.checkOut && (
+                            <TouchableOpacity style={styles.button} onPress={handleSaveParkingData}>
+                                <Text style={styles.buttonText}>Guardar Datos de Parqueo</Text>
+                            </TouchableOpacity>
+                            )}
+                        </View>
+                    )}
+                </View>
 
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                    style={[styles.button, updatedTicket.checkIn && styles.disabledButton]}
-                    onPress={handleCheckInFromServer}
-                    disabled={!!updatedTicket.checkIn}
-                >
-                    <Text style={styles.buttonText}>Check-In</Text>
-                </TouchableOpacity>
-
-                {updatedTicket.checkIn && (updatedTicket.parkingMethod === 'standard' || updatedTicket.parkingMethod === 'valet') && (
+                <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={[
-                            styles.button,
-                            (!updatedTicket.checkIn || updatedTicket.checkOut) && styles.disabledButton
-                        ]}
-                        onPress={handleCheckOut}
-                        disabled={!updatedTicket.checkIn || !!updatedTicket.checkOut}
+                        style={[styles.button, updatedTicket.checkIn && styles.disabledButton]}
+                        onPress={handleCheckInFromServer}
+                        disabled={!!updatedTicket.checkIn}
                     >
-
-                        <Text style={styles.buttonText}>Check-Out</Text>
+                        <Text style={styles.buttonText}>Check-In</Text>
                     </TouchableOpacity>
-                )}
 
-            </View>
-        </ScrollView>
+                    {updatedTicket.checkIn && (updatedTicket.parkingMethod === 'standard' || updatedTicket.parkingMethod === 'valet') && (
+                        <TouchableOpacity
+                            style={[
+                                styles.button,
+                                (!updatedTicket.checkIn || updatedTicket.checkOut) && styles.disabledButton
+                            ]}
+                            onPress={handleCheckOut}
+                            disabled={!updatedTicket.checkIn || !!updatedTicket.checkOut}
+                        >
+                            <Text style={styles.buttonText}>Check-Out</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 };
 

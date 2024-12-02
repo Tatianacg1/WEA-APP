@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert, StyleSheet, Button } from 'react-native';
+import { 
+    View, 
+    Text, 
+    FlatList, 
+    TouchableOpacity, 
+    Alert, 
+    StyleSheet, 
+    ActivityIndicator 
+} from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import { useNavigation } from '@react-navigation/native';
 
@@ -49,11 +57,11 @@ const DownloadedTicketsScreen = () => {
             [
                 {
                     text: 'Cancelar',
-                    style: 'cancel', // Estilo para el botón de cancelar
+                    style: 'cancel',
                 },
                 {
                     text: 'Eliminar',
-                    style: 'destructive', // Estilo que destaca la acción destructiva
+                    style: 'destructive',
                     onPress: async () => {
                         try {
                             await FileSystem.deleteAsync(filePath);
@@ -80,17 +88,19 @@ const DownloadedTicketsScreen = () => {
             >
                 <Text style={styles.eventName}>{item.eventName}</Text>
             </TouchableOpacity>
-            <Button
-                title="Delete"
-                color="#ff4d4d"
+            <TouchableOpacity
+                style={styles.deleteButton}
                 onPress={() => deleteEvent(item.filePath, item.eventId)}
-            />
+            >
+                <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
         </View>
     );
 
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#0000ff" />
                 <Text>Loading downloaded tickets...</Text>
             </View>
         );
@@ -143,6 +153,16 @@ const styles = StyleSheet.create({
     },
     eventName: {
         fontSize: 18,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    deleteButton: {
+        backgroundColor: '#ff4d4d',
+        padding: 15,
+        borderRadius: 8,
+    },
+    deleteButtonText: {
+        color: 'white',
         fontWeight: 'bold',
         textAlign: 'center',
     },
