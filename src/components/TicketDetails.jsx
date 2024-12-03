@@ -263,6 +263,7 @@ const TicketDetails = ({ route }) => {
             style={styles.scrollContainer}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
+            <View style={styles.scrollViewContainer}>
             <ScrollView 
                 style={styles.scrollContainer} 
                 contentContainerStyle={styles.contentContainer}
@@ -283,7 +284,7 @@ const TicketDetails = ({ route }) => {
                     <Text style={styles.infoText}>Pay with: {updatedTicket.paymentType || 'N/A'}</Text>
                     <Text style={styles.infoText}>Table seat: {1}</Text>
                     <Text style={styles.infoText}>Parking: {parkingMethod}</Text>
-                    {ticket.checkIn && updatedTicket.parkingMethod !== 'None' && updatedTicket.parkingMethod !== '' && (
+                    {updatedTicket.checkIn && updatedTicket.parkingMethod !== 'None' && updatedTicket.parkingMethod !== '' && updatedTicket.parkingMethod !== 'free' &&  (
                         <View>
                             <Text style={styles.infoText}>Datos de Parqueo:</Text>
                             <TextInput
@@ -323,7 +324,7 @@ const TicketDetails = ({ route }) => {
                     {updatedTicket.checkIn && (updatedTicket.parkingMethod === 'standard' || updatedTicket.parkingMethod === 'valet') && (
                         <TouchableOpacity
                             style={[
-                                styles.button,
+                                styles.buttonCheckOut,
                                 (!updatedTicket.checkIn || updatedTicket.checkOut) && styles.disabledButton
                             ]}
                             onPress={handleCheckOut}
@@ -334,14 +335,21 @@ const TicketDetails = ({ route }) => {
                     )}
                 </View>
             </ScrollView>
+            </View>
         </KeyboardAvoidingView>
     );
 };
 
 const styles = StyleSheet.create({
+    scrollViewContainer: {
+        flex: 1,
+        backgroundColor: '#d4fafd8f',
+        marginBottom: 30
+    },
     scrollContainer: {
         flex: 1,
         backgroundColor: '#d4fafd8f',
+        marginBottom: 10
     },
     contentContainer: {
         padding: 10,
@@ -376,7 +384,7 @@ const styles = StyleSheet.create({
     buttonContainer: {
         width: '100%',
         paddingHorizontal: 20,
-        marginBottom: 20,
+        marginBottom: 10,
     },
     button: {
         backgroundColor: '#007BFF',
@@ -385,6 +393,15 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginVertical: 10,
         width: '100%',
+    },
+    buttonCheckOut: {
+        backgroundColor: '#007BFF',
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        borderRadius: 8,
+        marginVertical: 10,
+        width: '100%',
+        marginBottom: 10
     },
     buttonText: {
         color: '#fff',
