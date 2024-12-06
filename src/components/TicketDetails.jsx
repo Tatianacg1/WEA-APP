@@ -25,10 +25,9 @@ const TicketDetails = ({ route }) => {
     useEffect(() => {
         setParkingSlot(ticket.parkingSlot || null);
         setKeySlot(ticket.keySlot || null);
-        console.log(ticket.checkIn)
     }, [ticket]);
 
-    const defaultImage = 'https://e7.pngegg.com/pngimages/499/151/png-clipart-silhouette-user-silhouette-animals-rectangle.png';
+    const defaultImage = 'https://worldeventaccess.com/media/logos/logo.png';
     const userImage = updatedTicket.credentials ? `data:image/png;base64,${updatedTicket.credentials}` : defaultImage;
 
     const updateTicketFile = useCallback(async (updated) => {
@@ -89,8 +88,6 @@ const TicketDetails = ({ route }) => {
     };
 
     const handleSaveParkingData = async () => {
-        console.log('Parking data:', parkingSlot, keySlot);
-        console.log('Ticket Id:', ticket.id);
         const payload = {
             id: ticket.id,
             parkingSlot,
@@ -137,8 +134,6 @@ const TicketDetails = ({ route }) => {
                     checkIn: newCheckInDate,
                     checkOut: updatedTicket.checkOut,
                 };
-
-                console.log('Payload:', JSON.stringify(payload));
 
                 // Hacer la solicitud al servidor
                 const response = await fetch(`${BASE_URL}/Ticket`, {
@@ -212,8 +207,6 @@ const TicketDetails = ({ route }) => {
                     checkIn: updatedTicket.checkIn,
                     checkOut: newCheckOutDate,
                 };
-
-                console.log('Payload:', JSON.stringify(payload));
 
                 const response = await fetch(`${BASE_URL}/Ticket`, {
                     method: 'PUT',
@@ -375,6 +368,7 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         borderWidth: 2,
         borderColor: '#007BFF',
+        objectFit: 'contain',
     },
     infoText: {
         fontSize: 16,
