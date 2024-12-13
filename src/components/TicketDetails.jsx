@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import moment from 'moment';
+import { useNavigation } from '@react-navigation/native';
 import { BASE_URL, API_TOKEN } from '../api/config';
 
 const TicketDetails = ({ route }) => {
-    const { ticket } = route.params;
+    const { ticket, tablesAndChairs } = route.params;
+    const navigation = useNavigation();
     const [updatedTicket, setUpdatedTicket] = useState(ticket);
     const [parkingMethod, setParkingMethod] = useState('');
     const [parkingSlot, setParkingSlot] = useState(ticket.parkingSlot);
@@ -27,6 +29,7 @@ const TicketDetails = ({ route }) => {
         setKeySlot(ticket.keySlot || null);
     }, [ticket]);
 
+    console.log("TablesAndChairs in TicketDetails: ", tablesAndChairs);
     const defaultImage = 'https://worldeventaccess.com/media/logos/logo.png';
     const userImage = updatedTicket.credentials ? `data:image/png;base64,${updatedTicket.credentials}` : defaultImage;
 
@@ -251,6 +254,21 @@ const TicketDetails = ({ route }) => {
         }));
     };
 
+    const handleAssignSeat = () => {
+        const eventId = updatedTicket.event?.id;
+        if (!eventId) {
+            Alert.alert('Error', 'No se encontró el ID del evento');
+            return;
+        }
+
+        navigation.navigate('AssignSeatScreen', {
+            eventId,
+            ticketId: updatedTicket.id,
+            passCode: 1234,
+            tablesAndChairs,
+        });
+    };
+
     return (
         <KeyboardAvoidingView 
             style={styles.scrollContainer}
@@ -275,7 +293,10 @@ const TicketDetails = ({ route }) => {
                     <Text style={styles.infoText}>Rooms: {updatedTicket.rooms || 'N/A'}</Text>
                     <Text style={styles.infoText}>Dates: {updatedTicket.dates || 'N/A'}</Text>
                     <Text style={styles.infoText}>Pay with: {updatedTicket.paymentType || 'N/A'}</Text>
-                    <Text style={styles.infoText}>Table seat: {1}</Text>
+                    <Text style={styles.infoText}>Table seat: {updatedTicket.tableSeat || 'N/A'}</Text>
+                    <TouchableOpacity style={styles.button} onPress={handleAssignSeat}>
+                        <Text style={styles.buttonText}>Assing Table/Chair</Text>
+                    </TouchableOpacity>
                     <Text style={styles.infoText}>Parking: {parkingMethod}</Text>
                     {updatedTicket.checkIn && updatedTicket.parkingMethod !== 'None' && updatedTicket.parkingMethod !== '' && updatedTicket.parkingMethod !== 'free' &&  (
                         <View>

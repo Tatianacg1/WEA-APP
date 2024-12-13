@@ -11,7 +11,7 @@ const QrCodeScanner = ({ route }) => {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
   const navigation = useNavigation();
-  const { eventId } = route.params;
+  const { eventId, tablesAndChairs } = route.params || {};
 
   useEffect(() => {
     console.log('=== Información de Depuración ===');
@@ -55,39 +55,38 @@ const QrCodeScanner = ({ route }) => {
     try {
       const filePath = `${FileSystem.documentDirectory}tickets_${eventId}.json`;
       console.log('Buscando archivo en:', filePath);
-
+  
       const fileExists = await FileSystem.getInfoAsync(filePath);
       console.log('¿Archivo existe?:', fileExists.exists);
-
+  
       if (!fileExists.exists) {
         throw new Error('Archivo de tickets no encontrado');
       }
-
-      let tickets = [];
+  
+      let jsonTickets;
       try {
         const fileContent = await FileSystem.readAsStringAsync(filePath);
-        console.log('Contenido del archivo:', fileContent.substring(0, 100) + '...');
-        tickets = JSON.parse(fileContent);
+        console.log('Contenido del archivo:', fileContent.substring(0, 2000) + '...');
+        jsonTickets = JSON.parse(fileContent);
       } catch (parseError) {
         console.error('Error al parsear JSON:', parseError);
         throw new Error('El archivo de tickets está dañado');
       }
-
-      if (!Array.isArray(tickets)) {
-        throw new Error('El formato del archivo de tickets no es válido');
-      }
-
+  
+      // Extraer eventTickets
+      const tickets = jsonTickets.eventTickets || [];
       console.log('Número de tickets encontrados:', tickets.length);
-
+  
       const normalizedScannedId = scannedTicketId.replace(/-/g, '');
       const ticket = tickets.find(t => t.id.replace(/-/g, '') === normalizedScannedId);
       
       console.log('Resultado de búsqueda:', ticket ? 'Ticket encontrado' : 'Ticket no encontrado');
-
+      console.log("TablesAndChairs in QRCodeScanner: ", tablesAndChairs);
+  
       if (ticket) {
         console.log('CheckIn Date:', ticket.checkIn);
         navigation.navigate('TicketDetails', { 
-          ticket: { ...ticket, event: { id: eventId } }
+          ticket: { ...ticket, event: { id: eventId } }, tablesAndChairs
         });
       } else {
         Alert.alert('Ticket no encontrado', `No se encontró un ticket con el ID: ${scannedTicketId}`);

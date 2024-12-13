@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, Image, Button } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert, Image, TouchableOpacity } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 
 const TicketsScreen = ({ route, navigation }) => {
     const { eventId, ticketsData: initialTicketsData } = route.params || {};
     const [tickets, setTickets] = useState(initialTicketsData || []);
     const [loading, setLoading] = useState(!initialTicketsData);
+    const [tablesAndChairs, setTablesAndChairs] = useState(initialTicketsData?.tablesAndChairs);
 
     useEffect(() => {
         if (!initialTicketsData) {
@@ -15,48 +16,71 @@ const TicketsScreen = ({ route, navigation }) => {
 
     const loadTicketsFromFile = async () => {
         const filePath = `${FileSystem.documentDirectory}tickets_${eventId}.json`;
-        console.log("Loading tickets from file:", filePath);
-        
+
         try {
             const fileContent = await FileSystem.readAsStringAsync(filePath);
             const jsonTickets = JSON.parse(fileContent);
-            
-            if (!Array.isArray(jsonTickets) && typeof jsonTickets === 'object') {
-                const ticketsArray = jsonTickets.tickets || jsonTickets.data || Object.values(jsonTickets)[0];
-                if (Array.isArray(ticketsArray)) {
-                    setTickets(ticketsArray);
-                } else {
-                    setTickets([jsonTickets]);
-                }
-            } else if (Array.isArray(jsonTickets)) {
-                setTickets(jsonTickets);
+            setTablesAndChairs(jsonTickets.tablesAndChairs);
+
+            const ticketsArray = jsonTickets || [];
+
+            if (ticketsArray) {
+                setTickets(ticketsArray);
+            } else {
+                console.warn('No tickets found in the file');
+                setTickets([]);
             }
         } catch (error) {
             console.error('Error loading tickets from file:', error);
             Alert.alert('Error', 'Failed to load tickets from file');
+            setTickets([]);
         } finally {
             setLoading(false);
         }
     };
 
     const renderTicketItem = ({ item }) => (
-        <View style={styles.ticketItem}>
-            <Text style={styles.ticketTitle}>{`${item.firstName || ''} ${item.lastName || ''}`}</Text>
-            <Text style={styles.ticketDetails}>Email: {item.email || 'N/A'}</Text>
-            <Text style={styles.ticketDetails}>Phone: {item.phone || 'N/A'}</Text>
-            <Text style={styles.ticketDetails}>Ticket Status: {item.ticketStatus === 1 ? 'Active' : 'Inactive'}</Text>
-            <Text style={styles.ticketDetails}>Group Quantity: {item.paymentType || 'N/A'}</Text>
-            <Text style={styles.ticketDetails}>Event: {item.event?.name || 'N/A'}</Text>
-            <Text style={styles.ticketDetails}>Total Amount: ${item.totalAmount || '0.00'}</Text>
-            {item.qrCode && (
-                <Image
-                    source={{ uri: `data:image/png;base64,${item.qrCode}` }}
-                    style={styles.ticketImage}
-                    resizeMode="contain"
-                />
-            )}
-        </View>
+        item.groupMain && (
+            <View style={styles.ticketItem}>
+                <Text style={styles.ticketTitle}>{`${item.firstName || ''} ${item.lastName || ''}`}</Text>
+                <Text style={styles.ticketDetails}>Email: {item.email || 'N/A'}</Text>
+                <Text style={styles.ticketDetails}>Phone: {item.phone || 'N/A'}</Text>
+                <Text style={styles.ticketDetails}>Ticket Status: {item.ticketStatus === 1 ? 'Active' : 'Inactive'}</Text>
+                <Text style={styles.ticketDetails}>Group Quantity: {item.groupQty || 'N/A'}</Text>
+                <Text style={styles.ticketDetails}>Payment Type: {item.paymentType || 'N/A'}</Text>
+                <Text style={styles.ticketDetails}>Event: {item.title || 'N/A'}</Text>
+                <Text style={styles.ticketDetails}>Total Amount: ${item.totalAmount || '0.00'}</Text>
+                {item.qrCode && (
+                    <Image
+                        source={{ uri: `data:image/png;base64,${item.qrCode}` }}
+                        style={styles.ticketImage}
+                        resizeMode="contain"
+                    />
+                )}
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => handleAssignSeat(item)}
+                >
+                    <Text style={styles.buttonText}>Assign Table/Chair</Text>
+                </TouchableOpacity>
+
+            </View>
+        )
     );
+
+    const handleAssignSeat = (item) => {
+        const eventId = item.eventId;
+        if (!eventId) {
+            Alert.alert('Error', 'No se encontró el ID del evento');
+            return;
+        }
+
+        navigation.navigate('AssignSeatScreen', {
+            eventId,
+            groupId: item.groupId,
+            passCode: "1234",
+        });
+    };
 
     if (loading) {
         return (
@@ -68,12 +92,12 @@ const TicketsScreen = ({ route, navigation }) => {
 
     return (
         <View style={styles.container}>
-            <Button
-                title="Scan QR Code"
-                onPress={() => navigation.navigate('QrCodeScanner', { eventId })}
-            />
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('QrCodeScanner', { eventId, tablesAndChairs })}
+            >
+                <Text style={styles.buttonText}>Scan QR Code</Text>
+            </TouchableOpacity>
             <FlatList
-                data={tickets}
+                data={tickets.eventTickets.filter(item => item.groupMain)}
                 keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
                 renderItem={renderTicketItem}
                 contentContainerStyle={styles.listContainer}
@@ -117,6 +141,19 @@ const styles = StyleSheet.create({
         height: 150,
         marginTop: 10,
     },
+    button: {
+        backgroundColor: '#007BFF',
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        borderRadius: 8,
+        marginVertical: 10,
+        width: '100%',
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 16,
+        textAlign: 'center',
+    }
 });
 
 export default TicketsScreen;

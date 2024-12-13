@@ -11,6 +11,7 @@ import TicketsScreen from './src/components/TicketsScreen';
 import DownloadedTicketsScreen from './src/components/DownloadedTicketsScreen';
 import QrCodeScanner from './src/components/QrCodeScanner';
 import TicketDetails from './src/components/TicketDetails';
+import AssignSeatScreen from './src/components/AssignSeatScreen';
 
 // Prevenir que la pantalla de splash desaparezca automáticamente
 SplashScreen.preventAutoHideAsync();
@@ -48,6 +49,7 @@ export default function App() {
         <Stack.Screen name="DownloadedTicketsScreen" component={DownloadedTicketsScreen} options={{ title: 'Downloaded Tickets' }} />
         <Stack.Screen name="QrCodeScanner" component={QrCodeScanner} options={{ title: 'Scan QR Code' }} />
         <Stack.Screen name="TicketDetails" component={TicketDetails} options={{ title: 'Ticket Details' }} />
+        <Stack.Screen name="AssignSeatScreen" component={AssignSeatScreen} options={{ title: 'Assign Seat' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

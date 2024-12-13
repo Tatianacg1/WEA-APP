@@ -65,7 +65,7 @@ const EventDetailsScreen = ({ route, navigation }) => {
                 throw new Error('Failed to fetch tickets');
             }
 
-            const ticketsData = response.data.eventTickets;
+            const ticketsData = response.data;
             const jsonString = JSON.stringify(ticketsData, null, 2);
             await FileSystem.writeAsStringAsync(filePath, jsonString);
 
@@ -77,7 +77,7 @@ const EventDetailsScreen = ({ route, navigation }) => {
             Alert.alert("Success", "Tickets downloaded successfully!");
             navigation.navigate('TicketsScreen', { 
                 eventId,
-                ticketsData
+                ticketsData,
             });
 
         } catch (error) {

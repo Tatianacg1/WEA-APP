@@ -34,14 +34,16 @@ const DownloadedTicketsScreen = () => {
                     const fileContent = await FileSystem.readAsStringAsync(filePath);
                     const jsonTickets = JSON.parse(fileContent);
 
-                    if (Array.isArray(jsonTickets) && jsonTickets.length > 0) {
-                        const eventName = jsonTickets[0]?.title || 'Unknown Event';
+                    if (Array.isArray(jsonTickets.eventTickets) && jsonTickets.eventTickets.length > 0) {
+                        const eventName = jsonTickets?.name || 'Unknown Event';
+                        console.log("Entró en el ciclo if");
                         events.push({ eventId, eventName, filePath });
                     }
                 } catch (error) {
                     console.warn(`Error reading file for event ${eventId}:`, error);
                 }
             }
+            console.log("Events: ", events);
             setDownloadedEvents(events);
         } catch (error) {
             Alert.alert('Error', 'Failed to load downloaded events');
