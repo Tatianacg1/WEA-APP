@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { 
-    View, 
-    Text, 
-    TouchableOpacity, 
-    Alert, 
-    StyleSheet, 
-    Image, 
-    TextInput, 
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    Alert,
+    StyleSheet,
+    Image,
+    TextInput,
     ScrollView,
     Platform,
     KeyboardAvoidingView
@@ -23,6 +23,7 @@ const TicketDetails = ({ route }) => {
     const [parkingMethod, setParkingMethod] = useState('');
     const [parkingSlot, setParkingSlot] = useState(ticket.parkingSlot);
     const [keySlot, setKeySlot] = useState(ticket.keySlot);
+    const [tableSeatDescription, setTableSeatDescription] = useState('');
 
     useEffect(() => {
         setParkingSlot(ticket.parkingSlot || null);
@@ -38,17 +39,33 @@ const TicketDetails = ({ route }) => {
 
         if (!eventId) {
             Alert.alert('Error', 'No se encontró el ID del evento');
-            return;
+            return false;
         }
 
         const filePath = `${FileSystem.documentDirectory}tickets_${eventId}.json`;
 
         try {
             const fileContent = await FileSystem.readAsStringAsync(filePath);
-            const tickets = JSON.parse(fileContent);
+            const eventData = JSON.parse(fileContent);
 
-            const updatedTickets = tickets.map(t => t.id === updated.id ? updated : t);
-            await FileSystem.writeAsStringAsync(filePath, JSON.stringify(updatedTickets));
+            // Verificar si eventTickets existe
+            if (!eventData.eventTickets || !Array.isArray(eventData.eventTickets)) {
+                console.error('No se encontró el array eventTickets');
+                return false;
+            }
+
+            // Reemplazar el ticket en el array eventTickets
+            const updatedEventTickets = eventData.eventTickets.map(ticket =>
+                ticket.id === updated.id ? updated : ticket
+            );
+
+            // Crear un nuevo objeto de evento con el array de tickets actualizado
+            const updatedEventData = {
+                ...eventData,
+                eventTickets: updatedEventTickets
+            };
+
+            await FileSystem.writeAsStringAsync(filePath, JSON.stringify(updatedEventData));
 
             return true;
         } catch (error) {
@@ -269,86 +286,133 @@ const TicketDetails = ({ route }) => {
         });
     };
 
+    useEffect(() => {
+        findTableSeatDescription();
+    }, [ticket, tablesAndChairs]);
+
+    const findTableSeatDescription = () => {
+        console.log("Raw tablesAndChairs:", tablesAndChairs);
+
+        let parsedTablesAndChairs;
+
+        // Verificar si tablesAndChairs es un string y parsearlo
+        if (typeof tablesAndChairs === "string") {
+            try {
+                parsedTablesAndChairs = JSON.parse(tablesAndChairs);
+                console.log("Parsed tablesAndChairs:", parsedTablesAndChairs);
+            } catch (error) {
+                console.error("Error parsing tablesAndChairs:", error);
+                setTableSeatDescription("N/A");
+                return;
+            }
+        } else if (Array.isArray(tablesAndChairs)) {
+            parsedTablesAndChairs = tablesAndChairs;
+        } else {
+            console.warn("Invalid tablesAndChairs format:", tablesAndChairs);
+            setTableSeatDescription("N/A");
+            return;
+        }
+
+        const { tableId, chairId } = ticket;
+        if (!tableId || !chairId || !Array.isArray(parsedTablesAndChairs)) return;
+
+        // Buscar la mesa correspondiente
+        const table = parsedTablesAndChairs.find(t => t.tableId === tableId);
+        console.log("Found Table:", table);
+
+        if (table && Array.isArray(table.chairs)) {
+            // Buscar la silla correspondiente dentro de la mesa
+            const chair = table.chairs.find(c => c.chairId === chairId);
+            console.log("Found Chair:", chair);
+
+            if (chair) {
+                setTableSeatDescription(chair.description);
+                return;
+            }
+        }
+        setTableSeatDescription("N/A");
+    };
+
     return (
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
             style={styles.scrollContainer}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <View style={styles.scrollViewContainer}>
-            <ScrollView 
-                style={styles.scrollContainer} 
-                contentContainerStyle={styles.contentContainer}
-                keyboardShouldPersistTaps="handled"
-            >
-                <Image
-                    source={{ uri: userImage }}
-                    style={styles.profileImage}
-                    resizeMode="cover"
-                />
-                <View style={styles.infoContainer}>
-                    <Text style={styles.infoText}>Event: {updatedTicket.title || 'N/A'}</Text>
-                    <Text style={styles.infoText}>Name: {updatedTicket.firstName || 'N/A'}</Text>
-                    <Text style={styles.infoText}>Last Name: {updatedTicket.lastName || 'N/A'}</Text>
-                    <Text style={styles.infoText}>Email: {updatedTicket.email || 'N/A'}</Text>
-                    <Text style={styles.infoText}>Rooms: {updatedTicket.rooms || 'N/A'}</Text>
-                    <Text style={styles.infoText}>Dates: {updatedTicket.dates || 'N/A'}</Text>
-                    <Text style={styles.infoText}>Pay with: {updatedTicket.paymentType || 'N/A'}</Text>
-                    <Text style={styles.infoText}>Table seat: {updatedTicket.tableSeat || 'N/A'}</Text>
-                    <TouchableOpacity style={styles.button} onPress={handleAssignSeat}>
-                        <Text style={styles.buttonText}>Assing Table/Chair</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.infoText}>Parking: {parkingMethod}</Text>
-                    {updatedTicket.checkIn && updatedTicket.parkingMethod !== 'None' && updatedTicket.parkingMethod !== '' && updatedTicket.parkingMethod !== 'free' &&  (
-                        <View>
-                            <Text style={styles.infoText}>Datos de Parqueo:</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Celda de parqueo"
-                                value={parkingSlot}
-                                onChangeText={setParkingSlot}
-                                editable={!updatedTicket.checkOut}
-                            />
-                            {updatedTicket.parkingMethod === 'valet' && (
+                <ScrollView
+                    style={styles.scrollContainer}
+                    contentContainerStyle={styles.contentContainer}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <Image
+                        source={{ uri: userImage }}
+                        style={styles.profileImage}
+                        resizeMode="cover"
+                    />
+                    <View style={styles.infoContainer}>
+                        <Text style={styles.infoText}>Event: {updatedTicket.title || 'N/A'}</Text>
+                        <Text style={styles.infoText}>Name: {updatedTicket.firstName || 'N/A'}</Text>
+                        <Text style={styles.infoText}>Last Name: {updatedTicket.lastName || 'N/A'}</Text>
+                        <Text style={styles.infoText}>Email: {updatedTicket.email || 'N/A'}</Text>
+                        <Text style={styles.infoText}>Rooms: {updatedTicket.rooms || 'N/A'}</Text>
+                        <Text style={styles.infoText}>Dates: {updatedTicket.dates || 'N/A'}</Text>
+                        <Text style={styles.infoText}>Pay with: {updatedTicket.paymentType || 'N/A'}</Text>
+                        <Text style={styles.infoText}>Table seat: {tableSeatDescription || 'N/A'}</Text>
+                        <TouchableOpacity style={styles.button} onPress={handleAssignSeat}>
+                            <Text style={styles.buttonText}>Assing Table/Chair</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.infoText}>Parking: {parkingMethod}</Text>
+                        {updatedTicket.checkIn && updatedTicket.parkingMethod !== 'None' && updatedTicket.parkingMethod !== '' && updatedTicket.parkingMethod !== 'free' && (
+                            <View>
+                                <Text style={styles.infoText}>Datos de Parqueo:</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Ubicación de la llave"
-                                    value={keySlot}
-                                    onChangeText={setKeySlot}
+                                    placeholder="Celda de parqueo"
+                                    value={parkingSlot}
+                                    onChangeText={setParkingSlot}
                                     editable={!updatedTicket.checkOut}
                                 />
-                            )}
-                            {!updatedTicket.checkOut && (
-                            <TouchableOpacity style={styles.button} onPress={handleSaveParkingData}>
-                                <Text style={styles.buttonText}>Guardar Datos de Parqueo</Text>
-                            </TouchableOpacity>
-                            )}
-                        </View>
-                    )}
-                </View>
+                                {updatedTicket.parkingMethod === 'valet' && (
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Ubicación de la llave"
+                                        value={keySlot}
+                                        onChangeText={setKeySlot}
+                                        editable={!updatedTicket.checkOut}
+                                    />
+                                )}
+                                {!updatedTicket.checkOut && (
+                                    <TouchableOpacity style={styles.button} onPress={handleSaveParkingData}>
+                                        <Text style={styles.buttonText}>Guardar Datos de Parqueo</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        )}
+                    </View>
 
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={[styles.button, updatedTicket.checkIn && styles.disabledButton]}
-                        onPress={handleCheckInFromServer}
-                        disabled={!!updatedTicket.checkIn}
-                    >
-                        <Text style={styles.buttonText}>Check-In</Text>
-                    </TouchableOpacity>
-
-                    {updatedTicket.checkIn && (updatedTicket.parkingMethod === 'standard' || updatedTicket.parkingMethod === 'valet') && (
+                    <View style={styles.buttonContainer}>
                         <TouchableOpacity
-                            style={[
-                                styles.buttonCheckOut,
-                                (!updatedTicket.checkIn || updatedTicket.checkOut) && styles.disabledButton
-                            ]}
-                            onPress={handleCheckOut}
-                            disabled={!updatedTicket.checkIn || !!updatedTicket.checkOut}
+                            style={[styles.button, updatedTicket.checkIn && styles.disabledButton]}
+                            onPress={handleCheckInFromServer}
+                            disabled={!!updatedTicket.checkIn}
                         >
-                            <Text style={styles.buttonText}>Check-Out</Text>
+                            <Text style={styles.buttonText}>Check-In</Text>
                         </TouchableOpacity>
-                    )}
-                </View>
-            </ScrollView>
+
+                        {updatedTicket.checkIn && (updatedTicket.parkingMethod === 'standard' || updatedTicket.parkingMethod === 'valet') && (
+                            <TouchableOpacity
+                                style={[
+                                    styles.buttonCheckOut,
+                                    (!updatedTicket.checkIn || updatedTicket.checkOut) && styles.disabledButton
+                                ]}
+                                onPress={handleCheckOut}
+                                disabled={!updatedTicket.checkIn || !!updatedTicket.checkOut}
+                            >
+                                <Text style={styles.buttonText}>Check-Out</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </ScrollView>
             </View>
         </KeyboardAvoidingView>
     );
