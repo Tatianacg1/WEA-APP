@@ -36,14 +36,12 @@ const DownloadedTicketsScreen = () => {
 
                     if (Array.isArray(jsonTickets.eventTickets) && jsonTickets.eventTickets.length > 0) {
                         const eventName = jsonTickets?.name || 'Unknown Event';
-                        console.log("Entró en el ciclo if");
                         events.push({ eventId, eventName, filePath });
                     }
                 } catch (error) {
                     console.warn(`Error reading file for event ${eventId}:`, error);
                 }
             }
-            console.log("Events: ", events);
             setDownloadedEvents(events);
         } catch (error) {
             Alert.alert('Error', 'Failed to load downloaded events');

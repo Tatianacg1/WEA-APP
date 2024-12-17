@@ -14,13 +14,11 @@ const QrCodeScanner = ({ route }) => {
   const { eventId, tablesAndChairs } = route.params || {};
 
   useEffect(() => {
-    console.log('=== Información de Depuración ===');
-    console.log('Solicitando permisos de la cámara...');
-    
+ 
     const getCameraPermissions = async () => {
       try {
         const { status } = await Camera.requestCameraPermissionsAsync();
-        console.log('Estado de permisos:', status);
+       
         setHasPermission(status === 'granted');
       } catch (error) {
         console.error('Error al solicitar permisos:', error);
@@ -31,17 +29,10 @@ const QrCodeScanner = ({ route }) => {
     getCameraPermissions();
   }, []);
 
-  const handleBarcodeScanned = ({ type, data }) => {
-    console.log('Código escaneado - Tipo:', type, 'Data:', data);
-    if (scanned) {
-      console.log('Escaneo ignorado - ya se escaneó previamente');
-      return;
-    }
-    
+  const handleBarcodeScanned = ({ data }) => {
     setScanned(true);
     try {
       const ticketId = data.split('/').pop();
-      console.log('Ticket ID extraído:', ticketId);
       findTicketById(ticketId);
     } catch (error) {
       console.error('Error procesando código QR:', error);
@@ -51,13 +42,10 @@ const QrCodeScanner = ({ route }) => {
   };
 
   const findTicketById = async (scannedTicketId) => {
-    console.log('=== Iniciando búsqueda de ticket ===');
     try {
       const filePath = `${FileSystem.documentDirectory}tickets_${eventId}.json`;
-      console.log('Buscando archivo en:', filePath);
   
       const fileExists = await FileSystem.getInfoAsync(filePath);
-      console.log('¿Archivo existe?:', fileExists.exists);
   
       if (!fileExists.exists) {
         throw new Error('Archivo de tickets no encontrado');
@@ -66,7 +54,7 @@ const QrCodeScanner = ({ route }) => {
       let jsonTickets;
       try {
         const fileContent = await FileSystem.readAsStringAsync(filePath);
-        console.log('Contenido del archivo:', fileContent.substring(0, 2000) + '...');
+  
         jsonTickets = JSON.parse(fileContent);
       } catch (parseError) {
         console.error('Error al parsear JSON:', parseError);
@@ -75,16 +63,12 @@ const QrCodeScanner = ({ route }) => {
   
       // Extraer eventTickets
       const tickets = jsonTickets.eventTickets || [];
-      console.log('Número de tickets encontrados:', tickets.length);
   
       const normalizedScannedId = scannedTicketId.replace(/-/g, '');
       const ticket = tickets.find(t => t.id.replace(/-/g, '') === normalizedScannedId);
       
-      console.log('Resultado de búsqueda:', ticket ? 'Ticket encontrado' : 'Ticket no encontrado');
-      console.log("TablesAndChairs in QRCodeScanner: ", tablesAndChairs);
   
       if (ticket) {
-        console.log('CheckIn Date:', ticket.checkIn);
         navigation.navigate('TicketDetails', { 
           ticket: { ...ticket, event: { id: eventId } }, tablesAndChairs
         });
@@ -121,7 +105,6 @@ const QrCodeScanner = ({ route }) => {
         <TouchableOpacity
           style={styles.button}
           onPress={() => {
-            console.log('Reiniciando escaneo...');
             setScanned(false);
           }}
         >
@@ -130,7 +113,9 @@ const QrCodeScanner = ({ route }) => {
       )}
     </View>
   );
-};
+
+};	
+
 
 const styles = StyleSheet.create({
   container: {

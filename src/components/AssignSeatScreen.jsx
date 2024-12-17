@@ -22,7 +22,7 @@ const AssignSeatScreen = () => {
         try {
             const eventDetails = await fetchPrivateEventDetails(eventId);
             const parsedData = JSON.parse(eventDetails.tablesAndChairs);
-            console.log('Parsed Tables and Chairs:', JSON.stringify(parsedData, null, 2));
+            
             setParsedTablesAndChairs(parsedData);
         } catch (error) {
             console.error('Error fetching or parsing tablesAndChairs:', error);
@@ -44,7 +44,6 @@ const AssignSeatScreen = () => {
             const tickets = jsonTickets.eventTickets || [];
 
             const groupTickets = tickets.filter(t => t.groupId === groupId);
-            console.log('Group Tickets:', groupTickets);
 
             const unassignedTickets = groupTickets.filter(t => !t.tableId || !t.chairId);
 
@@ -81,7 +80,7 @@ const AssignSeatScreen = () => {
     };
 
     const assignSeatToTicket = async (tableId, chairId, ticketId) => {
-        console.log('Assigning Seat:', { eventId, groupId, passCode, tableId, chairId, ticketId });
+
 
         const endpoint = `${BASE_URL}/PublicTicket/AssignChairToTicket`;
         const payload = {
@@ -110,7 +109,6 @@ const AssignSeatScreen = () => {
             });
 
             const result = await response.json();
-            console.log('API Response:', result);
 
             if (response.ok) {
                 Alert.alert('Success', 'Seat assigned successfully.');
@@ -146,7 +144,6 @@ const AssignSeatScreen = () => {
             const unassignedTickets = updatedTickets.filter(t => t.groupId === groupId && (!t.tableId || !t.chairId));
             setRemainingTickets(unassignedTickets);
 
-            console.log('Local tickets updated successfully.');
 
             // Fetch updated tablesAndChairs
             fetchTablesAndChairs();

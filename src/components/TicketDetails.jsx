@@ -34,6 +34,9 @@ const TicketDetails = ({ route }) => {
     const defaultImage = 'https://worldeventaccess.com/media/logos/logo.png';
     const userImage = updatedTicket.credentials ? `data:image/png;base64,${updatedTicket.credentials}` : defaultImage;
 
+    useEffect(() => {
+        updateTicketFile();
+    }, []);
     const updateTicketFile = useCallback(async (updated) => {
         const eventId = updated.event?.id;
 
@@ -196,10 +199,10 @@ const TicketDetails = ({ route }) => {
     }, [updatedTicket, updateTicketFile]);
 
     const handleCheckOut = useCallback(async () => {
-        if (updatedTicket.parkingMethod === 'None' || updatedTicket.parkingMethod === '' || updatedTicket.parkingMethod === null || updatedTicket.parkingMethod === 'free') {
+        /*if (updatedTicket.parkingMethod === 'None' || updatedTicket.parkingMethod === '' || updatedTicket.parkingMethod === null || updatedTicket.parkingMethod === 'free') {
             Alert.alert('Operación no permitida', 'El check-out no está habilitado para este método de parqueo.');
             return;
-        }
+        }*/
 
         if (updatedTicket.parkingMethod === 'valet') {
             if (!updatedTicket.parkingSlot || !updatedTicket.keySlot) {
@@ -280,9 +283,8 @@ const TicketDetails = ({ route }) => {
 
         navigation.navigate('AssignSeatScreen', {
             eventId,
-            ticketId: updatedTicket.id,
-            passCode: 1234,
-            tablesAndChairs,
+            groupId: ticket.groupId,
+            passCode: "1234",
         });
     };
 
@@ -362,16 +364,21 @@ const TicketDetails = ({ route }) => {
                             <Text style={styles.buttonText}>Assing Table/Chair</Text>
                         </TouchableOpacity>
                         <Text style={styles.infoText}>Parking: {parkingMethod}</Text>
-                        {updatedTicket.checkIn && updatedTicket.parkingMethod !== 'None' && updatedTicket.parkingMethod !== '' && updatedTicket.parkingMethod !== 'free' && (
+                        {updatedTicket.checkIn && (
                             <View>
-                                <Text style={styles.infoText}>Datos de Parqueo:</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Celda de parqueo"
-                                    value={parkingSlot}
-                                    onChangeText={setParkingSlot}
-                                    editable={!updatedTicket.checkOut}
-                                />
+                                {(updatedTicket.parkingMethod === 'standard' || updatedTicket.parkingMethod === 'valet') && (
+                                    <>
+                                        <Text style={styles.infoText}>Datos de Parqueo:</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Celda de parqueo"
+                                            value={parkingSlot}
+                                            onChangeText={setParkingSlot}
+                                            editable={!updatedTicket.checkOut}
+                                        />
+                                    </>
+                                )}
+
                                 {updatedTicket.parkingMethod === 'valet' && (
                                     <TextInput
                                         style={styles.input}
@@ -381,7 +388,7 @@ const TicketDetails = ({ route }) => {
                                         editable={!updatedTicket.checkOut}
                                     />
                                 )}
-                                {!updatedTicket.checkOut && (
+                                {!updatedTicket.checkOut && (updatedTicket.parkingMethod === 'standard' || updatedTicket.parkingMethod === 'valet') && (
                                     <TouchableOpacity style={styles.button} onPress={handleSaveParkingData}>
                                         <Text style={styles.buttonText}>Guardar Datos de Parqueo</Text>
                                     </TouchableOpacity>
@@ -399,7 +406,7 @@ const TicketDetails = ({ route }) => {
                             <Text style={styles.buttonText}>Check-In</Text>
                         </TouchableOpacity>
 
-                        {updatedTicket.checkIn && (updatedTicket.parkingMethod === 'standard' || updatedTicket.parkingMethod === 'valet') && (
+                        {updatedTicket.checkIn && (
                             <TouchableOpacity
                                 style={[
                                     styles.buttonCheckOut,

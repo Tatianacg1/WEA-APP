@@ -124,7 +124,6 @@ const EventsScreen = ({ navigation }) => {
                                     }}
                                     style={styles.logo}
                                     defaultSource={require('../../assets/WEA.png')} 
-                                    onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
                                 />
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => navigation.navigate('EventDetailsScreen', { eventId: event.id })}>
