@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, Image, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 
 const TicketsScreen = ({ route, navigation }) => {
     const { eventId, ticketsData: initialTicketsData } = route.params || {};
     const [tickets, setTickets] = useState(initialTicketsData || []);
     const [loading, setLoading] = useState(!initialTicketsData);
-    const [tablesAndChairs, setTablesAndChairs] = useState(initialTicketsData?.tablesAndChairs);
+    const [filter, setFilter] = useState('all'); // Estado del filtro: 'all', 'checkIn', 'noCheckIn', 'checkOut'
 
     useEffect(() => {
         if (!initialTicketsData) {
@@ -20,16 +20,8 @@ const TicketsScreen = ({ route, navigation }) => {
         try {
             const fileContent = await FileSystem.readAsStringAsync(filePath);
             const jsonTickets = JSON.parse(fileContent);
-            setTablesAndChairs(jsonTickets.tablesAndChairs);
 
-            const ticketsArray = jsonTickets || [];
-
-            if (ticketsArray) {
-                setTickets(ticketsArray);
-            } else {
-                console.warn('No tickets found in the file');
-                setTickets([]);
-            }
+            setTickets(jsonTickets?.eventTickets || []);
         } catch (error) {
             console.error('Error loading tickets from file:', error);
             Alert.alert('Error', 'Failed to load tickets from file');
@@ -39,33 +31,39 @@ const TicketsScreen = ({ route, navigation }) => {
         }
     };
 
-    const renderTicketItem = ({ item }) => (
-        item.groupMain && (
-            <View style={styles.ticketItem}>
-                <Text style={styles.ticketTitle}>{`${item.firstName || ''} ${item.lastName || ''}`}</Text>
-                <Text style={styles.ticketDetails}>Email: {item.email || 'N/A'}</Text>
-                <Text style={styles.ticketDetails}>Phone: {item.phone || 'N/A'}</Text>
-                <Text style={styles.ticketDetails}>Ticket Status: {item.ticketStatus === 1 ? 'Active' : 'Inactive'}</Text>
-                <Text style={styles.ticketDetails}>Group Quantity: {item.groupQty || 'N/A'}</Text>
-                <Text style={styles.ticketDetails}>Payment Type: {item.paymentType || 'N/A'}</Text>
-                <Text style={styles.ticketDetails}>Event: {item.title || 'N/A'}</Text>
-                <Text style={styles.ticketDetails}>Total Amount: ${item.totalAmount || '0.00'}</Text>
-                {item.qrCode && (
-                    <Image
-                        source={{ uri: `data:image/png;base64,${item.qrCode}` }}
-                        style={styles.ticketImage}
-                        resizeMode="contain"
-                    />
-                )}
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => handleAssignSeat(item)}
-                >
-                    <Text style={styles.buttonText}>Assign Table/Chair</Text>
-                </TouchableOpacity>
+    const handleScanQrCode = () => {
+        navigation.navigate('QrCodeScanner', { eventId });
+    };
 
-            </View>
-        )
+    // Filtro de tickets basado en el estado del check-in y check-out
+    const getFilteredTickets = () => {
+        switch (filter) {
+            case 'checkIn':
+                return tickets.filter((ticket) => ticket.checkIn); // Tickets con check-in
+            case 'noCheckIn':
+                return tickets.filter((ticket) => !ticket.checkIn); // Tickets sin check-in
+            case 'checkOut':
+                return tickets.filter((ticket) => ticket.checkOut); // Tickets con check-out
+            default:
+                return tickets; // Todos los tickets
+        }
+    };
+
+    const renderTicketItem = ({ item }) => (
+        <View style={styles.ticketItem}>
+            <Text style={styles.ticketTitle}>{`${item.firstName || ''} ${item.lastName || ''}`}</Text>
+            <Text style={styles.ticketDetails}>Email: {item.email || 'N/A'}</Text>
+            <Text style={styles.ticketDetails}>Phone: {item.phone || 'N/A'}</Text>
+            <Text style={styles.ticketDetails}>Check-In: {item.checkIn ? 'Yes' : 'No'}</Text>
+            <Text style={styles.ticketDetails}>Check-Out: {item.checkOut ? 'Yes' : 'No'}</Text>
+            <Text style={styles.ticketDetails}>Group Quantity: {item.groupQty || 'N/A'}</Text>
+            <TouchableOpacity
+                style={styles.button}
+                onPress={() => handleAssignSeat(item)}
+            >
+                <Text style={styles.buttonText}>Assign Table/Chair</Text>
+            </TouchableOpacity>
+        </View>
     );
 
     const handleAssignSeat = (item) => {
@@ -78,7 +76,7 @@ const TicketsScreen = ({ route, navigation }) => {
         navigation.navigate('AssignSeatScreen', {
             eventId,
             groupId: item.groupId,
-            passCode: "1234",
+            passCode: '1234',
         });
     };
 
@@ -92,12 +90,46 @@ const TicketsScreen = ({ route, navigation }) => {
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('QrCodeScanner', { eventId, tablesAndChairs })}
-            >
-                <Text style={styles.buttonText}>Scan QR Code</Text>
-            </TouchableOpacity>
+            {/* Título y botón para escanear QR */}
+            <View style={styles.header}>
+                <TouchableOpacity
+                    style={styles.qrButton}
+                    onPress={handleScanQrCode}
+                >
+                    <Text style={styles.qrButtonText}>Scan QR</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Botones para alternar el filtro */}
+            <View style={styles.filterContainer}>
+                <TouchableOpacity
+                    style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]}
+                    onPress={() => setFilter('all')}
+                >
+                    <Text style={styles.filterText}>All</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.filterButton, filter === 'checkIn' && styles.filterButtonActive]}
+                    onPress={() => setFilter('checkIn')}
+                >
+                    <Text style={styles.filterText}>Check-In</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.filterButton, filter === 'noCheckIn' && styles.filterButtonActive]}
+                    onPress={() => setFilter('noCheckIn')}
+                >
+                    <Text style={styles.filterText}>No Check-In</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.filterButton, filter === 'checkOut' && styles.filterButtonActive]}
+                    onPress={() => setFilter('checkOut')}
+                >
+                    <Text style={styles.filterText}>Check-Out</Text>
+                </TouchableOpacity>
+            </View>
+
             <FlatList
-                data={tickets.eventTickets.filter(item => item.groupMain)}
+                data={getFilteredTickets()}
                 keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
                 renderItem={renderTicketItem}
                 contentContainerStyle={styles.listContainer}
@@ -117,8 +149,52 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#000',
+    },
+    qrButton: {
+        backgroundColor: '#007BFF',
+        paddingVertical: 8,
+        paddingHorizontal: 15,
+        borderRadius: 8,
+    },
+    qrButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
     listContainer: {
         paddingBottom: 20,
+    },
+    filterContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+    },
+    filterButton: {
+        flex: 1,
+        marginHorizontal: 1,
+        padding: 2,
+        borderWidth: 1,
+        borderColor: '#007BFF',
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    filterButtonActive: {
+        backgroundColor: '#007BFF',
+    },
+    filterText: {
+        color: '#000000',
+        fontWeight: 'bold',
     },
     ticketItem: {
         marginBottom: 15,
@@ -136,24 +212,18 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 4,
     },
-    ticketImage: {
-        width: 150,
-        height: 150,
-        marginTop: 10,
-    },
     button: {
         backgroundColor: '#007BFF',
         paddingVertical: 12,
         paddingHorizontal: 25,
         borderRadius: 8,
-        marginVertical: 10,
-        width: '100%',
+        marginTop: 10,
     },
     buttonText: {
         color: '#fff',
         fontSize: 16,
         textAlign: 'center',
-    }
+    },
 });
 
 export default TicketsScreen;

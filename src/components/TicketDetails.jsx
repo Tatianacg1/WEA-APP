@@ -211,13 +211,6 @@ const TicketDetails = ({ route }) => {
             }
         }
 
-        if (updatedTicket.parkingMethod === 'standard') {
-            if (!updatedTicket.parkingSlot) {
-                Alert.alert('Campos requeridos', 'Debes llenar el número de parqueo antes de realizar el check-out.');
-                return;
-            }
-        }
-
         if (updatedTicket.checkIn && !updatedTicket.checkOut) {
             try {
                 const newCheckOutDate = moment().format('YYYY-MM-DDTHH:mm:ss');
