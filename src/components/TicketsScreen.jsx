@@ -4,27 +4,48 @@ import * as FileSystem from 'expo-file-system';
 
 const TicketsScreen = ({ route, navigation }) => {
     const { eventId, ticketsData: initialTicketsData } = route.params || {};
-    const [tickets, setTickets] = useState(initialTicketsData || []);
-    const [loading, setLoading] = useState(!initialTicketsData);
-    const [filter, setFilter] = useState('all'); // Estado del filtro: 'all', 'checkIn', 'noCheckIn', 'checkOut'
+    const [tickets, setTickets] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('all');
 
     useEffect(() => {
-        if (!initialTicketsData) {
-            loadTicketsFromFile();
-        }
-    }, [eventId, initialTicketsData]);
+        loadTickets();
+    }, [eventId]);
 
-    const loadTicketsFromFile = async () => {
-        const filePath = `${FileSystem.documentDirectory}tickets_${eventId}.json`;
-
+    const loadTickets = async () => {
+        setLoading(true);
+        
         try {
+            // Si hay datos iniciales, úsalos
+            if (initialTicketsData && initialTicketsData.length > 0) {
+                setTickets(initialTicketsData);
+                return;
+            }
+
+            // Si no hay datos iniciales, intenta cargar desde el archivo
+            const filePath = `${FileSystem.documentDirectory}tickets_${eventId}.json`;
+            const fileExists = await FileSystem.getInfoAsync(filePath);
+
+            if (!fileExists.exists) {
+                setTickets([]);
+                return;
+            }
+
             const fileContent = await FileSystem.readAsStringAsync(filePath);
             const jsonTickets = JSON.parse(fileContent);
 
-            setTickets(jsonTickets?.eventTickets || []);
+            if (jsonTickets?.eventTickets) {
+                setTickets(jsonTickets.eventTickets);
+            } else {
+                setTickets([]);
+            }
         } catch (error) {
-            console.error('Error loading tickets from file:', error);
-            Alert.alert('Error', 'Failed to load tickets from file');
+            console.error('Error loading tickets:', error);
+            Alert.alert(
+                'Error',
+                'No se pudieron cargar los tickets. Por favor, intente nuevamente.',
+                [{ text: 'OK' }]
+            );
             setTickets([]);
         } finally {
             setLoading(false);
@@ -35,17 +56,16 @@ const TicketsScreen = ({ route, navigation }) => {
         navigation.navigate('QrCodeScanner', { eventId });
     };
 
-    // Filtro de tickets basado en el estado del check-in y check-out
     const getFilteredTickets = () => {
         switch (filter) {
             case 'checkIn':
-                return tickets.filter((ticket) => ticket.checkIn); // Tickets con check-in
+                return tickets.filter((ticket) => ticket.checkIn);
             case 'noCheckIn':
-                return tickets.filter((ticket) => !ticket.checkIn); // Tickets sin check-in
+                return tickets.filter((ticket) => !ticket.checkIn);
             case 'checkOut':
-                return tickets.filter((ticket) => ticket.checkOut); // Tickets con check-out
+                return tickets.filter((ticket) => ticket.checkOut);
             default:
-                return tickets; // Todos los tickets
+                return tickets;
         }
     };
 
@@ -67,14 +87,13 @@ const TicketsScreen = ({ route, navigation }) => {
     );
 
     const handleAssignSeat = (item) => {
-        const eventId = item.eventId;
-        if (!eventId) {
+        if (!item.eventId) {
             Alert.alert('Error', 'No se encontró el ID del evento');
             return;
         }
 
         navigation.navigate('AssignSeatScreen', {
-            eventId,
+            eventId: item.eventId,
             groupId: item.groupId,
             passCode: '1234',
         });
@@ -83,14 +102,13 @@ const TicketsScreen = ({ route, navigation }) => {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <Text>Loading tickets...</Text>
+                <Text>Cargando tickets...</Text>
             </View>
         );
     }
 
     return (
         <View style={styles.container}>
-            {/* Título y botón para escanear QR */}
             <View style={styles.header}>
                 <TouchableOpacity
                     style={styles.qrButton}
@@ -100,40 +118,45 @@ const TicketsScreen = ({ route, navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Botones para alternar el filtro */}
             <View style={styles.filterContainer}>
                 <TouchableOpacity
                     style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]}
                     onPress={() => setFilter('all')}
                 >
-                    <Text style={styles.filterText}>All</Text>
+                    <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>All</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.filterButton, filter === 'checkIn' && styles.filterButtonActive]}
                     onPress={() => setFilter('checkIn')}
                 >
-                    <Text style={styles.filterText}>Check-In</Text>
+                    <Text style={[styles.filterText, filter === 'checkIn' && styles.filterTextActive]}>Check-In</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.filterButton, filter === 'noCheckIn' && styles.filterButtonActive]}
                     onPress={() => setFilter('noCheckIn')}
                 >
-                    <Text style={styles.filterText}>No Check-In</Text>
+                    <Text style={[styles.filterText, filter === 'noCheckIn' && styles.filterTextActive]}>No Check-In</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.filterButton, filter === 'checkOut' && styles.filterButtonActive]}
                     onPress={() => setFilter('checkOut')}
                 >
-                    <Text style={styles.filterText}>Check-Out</Text>
+                    <Text style={[styles.filterText, filter === 'checkOut' && styles.filterTextActive]}>Check-Out</Text>
                 </TouchableOpacity>
             </View>
 
-            <FlatList
-                data={getFilteredTickets()}
-                keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-                renderItem={renderTicketItem}
-                contentContainerStyle={styles.listContainer}
-            />
+            {tickets.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No hay tickets disponibles</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={getFilteredTickets()}
+                    keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+                    renderItem={renderTicketItem}
+                    contentContainerStyle={styles.listContainer}
+                />
+            )}
         </View>
     );
 };
@@ -148,6 +171,15 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#666',
     },
     header: {
         flexDirection: 'row',
@@ -195,6 +227,9 @@ const styles = StyleSheet.create({
     filterText: {
         color: '#000000',
         fontWeight: 'bold',
+    },
+    filterTextActive: {
+        color: '#ffffff',
     },
     ticketItem: {
         marginBottom: 15,
