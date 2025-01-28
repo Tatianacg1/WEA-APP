@@ -15,6 +15,12 @@ import styles from '../styles/eventsStyles';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchEventsDetails } from '../api/eventsService';
 
+// Mover la función formatDate fuera del componente para que esté disponible globalmente
+const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+};
+
 const EventsScreen = ({ navigation }) => {
     const [events, setEvents] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +36,7 @@ const EventsScreen = ({ navigation }) => {
                 const data = await fetchEventsDetails();
                 if (data && data.length > 0) {
                     setEvents(data);
+                    setFilteredByEmail(data); // Inicializar filteredByEmail con todos los eventos
                 } else {
                     Alert.alert('No Events', 'No events are currently available.', [{ text: 'OK' }]);
                 }
@@ -42,13 +49,15 @@ const EventsScreen = ({ navigation }) => {
     }, []);
 
     const handleEmailFilter = () => {
-        const filteredEvents = events.filter(event => event.organizerEmail === ownerEmail.trim().toLowerCase());
+        const filteredEvents = events.filter(event => 
+            event.organizerEmail?.toLowerCase() === ownerEmail.trim().toLowerCase()
+        );
         setFilteredByEmail(filteredEvents);
         setShowEmailModal(false);
     };
 
     const handleSkipEmail = () => {
-        setFilteredByEmail(events); // Show all events if skipped
+        setFilteredByEmail(events);
         setShowEmailModal(false);
     };
 
@@ -58,11 +67,6 @@ const EventsScreen = ({ navigation }) => {
         formatDate(event.eventEndDate).includes(searchTerm)
     );
 
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString();
-    };
-
     const onDateChange = (event, selectedDate) => {
         const currentDate = selectedDate || date;
         setShowDatePicker(false);
@@ -70,6 +74,7 @@ const EventsScreen = ({ navigation }) => {
         setSearchTerm(formatDate(currentDate));
     };
 
+    // Resto del código del componente permanece igual...
     return (
         <View style={styles.container}>
             {/* Email Modal */}
@@ -120,15 +125,14 @@ const EventsScreen = ({ navigation }) => {
                     onChange={onDateChange}
                 />
             )}
+            
             <View style={styles.buttonContainer}>
-                {/* Button to trigger email modal */}
                 <TouchableOpacity
                     style={styles.ticketButton}
                     onPress={() => setShowEmailModal(true)}
                 >
                     <Text style={styles.ticketButtonText}>Enter Owner Email</Text>
                 </TouchableOpacity>
-                {/* Downloaded Tickets Button */}
                 <TouchableOpacity
                     style={styles.ticketButton}
                     onPress={() => navigation.navigate('DownloadedTicketsScreen')}
@@ -177,6 +181,12 @@ const EventsScreen = ({ navigation }) => {
 };
 
 const modalStyles = StyleSheet.create({
+    // Los estilos permanecen iguales...
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     overlay: {
         flex: 1,
         justifyContent: 'center',
@@ -193,6 +203,7 @@ const modalStyles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         marginBottom: 15,
+        
     },
     input: {
         borderWidth: 1,

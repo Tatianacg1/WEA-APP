@@ -298,7 +298,6 @@ const AssignSeatScreen = () => {
 const styles = StyleSheet.create({
     container: {
         padding: 16,
-        backgroundColor: '#f0f2f5',
         minHeight: '100%',
     },
     title: {

@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export const fetchSignIn = async (email, password) => {
     try {
-      const response = await axios.post('https://new-api.worldeventaccess.com/api/token', {
+      const response = await axios.post('https://api.worldeventaccess.com/api/token', {
         userName: email,
         password: password
       });

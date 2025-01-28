@@ -2,8 +2,7 @@ import { StyleSheet, TextInput } from "react-native-web";
 
 export default StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
+        flex: 1
     },
     searchContainer: {
         flexDirection: 'row',

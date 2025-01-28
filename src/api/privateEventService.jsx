@@ -3,7 +3,7 @@ import { API_TOKEN } from './config';
 
 export const fetchPrivateEventDetails = async (eventId) => {
   try {
-    const response = await axios.get(`https://new-api.worldeventaccess.com/api/Event/${eventId}?IncludeTickets=false`, {
+    const response = await axios.get(`https://api.worldeventaccess.com/api/Event/${eventId}?IncludeTickets=false`, {
         headers: {
             'Authorization': `Bearer ${API_TOKEN}`,
             'Content-Type': 'application/json'
