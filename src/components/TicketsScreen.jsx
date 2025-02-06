@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 const TicketsScreen = ({ route, navigation }) => {
     const { eventId, ticketsData: initialTicketsData } = route.params || {};
@@ -14,7 +15,7 @@ const TicketsScreen = ({ route, navigation }) => {
 
     const loadTickets = async () => {
         setLoading(true);
-        
+
         try {
             // Si hay datos iniciales, úsalos
             if (initialTicketsData && initialTicketsData.length > 0) {
@@ -69,6 +70,66 @@ const TicketsScreen = ({ route, navigation }) => {
         }
     };
 
+    const exportTicketsToCSV = async () => {
+        if (tickets.length === 0) {
+            Alert.alert('No hay tickets para exportar.');
+            return;
+        }
+
+        const csvHeaders = [
+            'Ticket Buyer', 'Ticket Status', 'First Name', 'Last Name', 'Email', 'Phone', 'Dates',
+            'Parking Method', 'Parking Slot', 'Key Slot', 'Payment By', 'Created By', 'Created At', 'Check-In',
+            'Check-In Date', 'Check-Out', 'Check-Out Date', 'Group Quantity', 'Rooms', 'Has Combo', 'Combo Name',
+            'Combo Description', 'Coupon Code Used', 'Ticket Price', 'Total Amount'
+        ].join(';');
+
+        const csvRows = tickets.map(ticket => [
+            ticket.groupMain ? 'Yes' : 'No',
+            ticket.ticketStatus === 1 ? 'Active' : 'Inactive',
+            `"${ticket.firstName || ''}"`,
+            `"${ticket.lastName || ''}"`,
+            `"${ticket.email || ''}"`,
+            `"${ticket.phone || ''}"`,
+            `"${ticket.dates || ''}"`,
+            `"${ticket.parkingMethod || ''}"`,
+            `"${ticket.parkingSlot || ''}"`,
+            `"${ticket.keySlot || ''}"`,
+            `"${ticket.paymentType || ''}"`,
+            `"${ticket.createdBy || ''}"`,
+            `"${ticket.createdAt || ''}"`,
+            ticket.checkIn ? 'Yes' : 'No',
+            `"${ticket.checkIn || ''}"`,
+            ticket.checkOut ? 'Yes' : 'No',
+            `"${ticket.checkOut || ''}"`,
+            `"${ticket.groupQty || '1'}"`,
+            `"${ticket.rooms || ''}"`,
+            ticket.hasCombo ? 'Yes' : 'No',
+            `"${ticket.selectedComboName || ''}"`,
+            `"${ticket.selectedComboDescription || ''}"`,
+            `"${ticket.paymentRecordId || ''}"`,
+            `"${ticket.ticketPrice || ''}"`,
+            `"${ticket.totalAmount || ''}"`
+        ].join(';'));
+
+        const csvContent = [csvHeaders, ...csvRows].join('\n');
+        const eventName = tickets[0]?.title?.replace(/\s+/g, '_') || 'Event';
+        const filePath = `${FileSystem.documentDirectory}${eventName}_tickets_export.csv`;
+
+        try {
+            await FileSystem.writeAsStringAsync(filePath, csvContent, { encoding: FileSystem.EncodingType.UTF8 });
+
+            if (!(await Sharing.isAvailableAsync())) {
+                Alert.alert('No se puede compartir el archivo en este dispositivo.');
+                return;
+            }
+
+            await Sharing.shareAsync(filePath);
+        } catch (error) {
+            console.error('Error exportando CSV:', error);
+            Alert.alert('Error', 'No se pudo exportar el archivo CSV.');
+        }
+    };
+
     const renderTicketItem = ({ item }) => (
         <View style={styles.ticketItem}>
             <Text style={styles.ticketTitle}>{`${item.firstName || ''} ${item.lastName || ''}`}</Text>
@@ -115,6 +176,11 @@ const TicketsScreen = ({ route, navigation }) => {
                     onPress={handleScanQrCode}
                 >
                     <Text style={styles.qrButtonText}>Scan QR</Text>
+                </TouchableOpacity>
+            </View>
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.button} onPress={exportTicketsToCSV}>
+                    <Text style={styles.buttonText}>Export Data</Text>
                 </TouchableOpacity>
             </View>
 

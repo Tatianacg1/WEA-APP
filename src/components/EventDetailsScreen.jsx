@@ -8,8 +8,7 @@ import {
     Alert, 
     TextInput, 
     ActivityIndicator,
-    StyleSheet,
-    Platform
+    StyleSheet
 } from 'react-native';
 import styles from '../styles/eventStyles';
 import * as FileSystem from 'expo-file-system';
@@ -20,10 +19,9 @@ import { API_TOKEN, BASE_URL } from '../api/config';
 const EventDetailsScreen = ({ route, navigation }) => {
     const { eventId } = route.params;
     const [event, setEvent] = useState(null);
-    const [downloadProgress, setDownloadProgress] = useState(0);
-    const [isDownloading, setIsDownloading] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [passCode, setPassCode] = useState('');
+    const [name, setName] = useState('');
 
     useEffect(() => {
         const getEventDetails = async () => {
@@ -40,19 +38,20 @@ const EventDetailsScreen = ({ route, navigation }) => {
     }, [eventId]);
 
     const fetchAndSaveTickets = async () => {
-        if (isLoading || !passCode) {
-            Alert.alert('Error', 'Please enter a pass code.');
+        if (!passCode || !name) {
+            Alert.alert('Error', 'Please enter both name and pass code.');
             return;
         }
         
         setIsLoading(true);
         const ticketUrl = `https://new-api.worldeventaccess.com/api/PublicEvents/PassCode`;
         const filePath = `${FileSystem.documentDirectory}tickets_${eventId}.json`;
-
+        const filePathNameInCharge = `${FileSystem.documentDirectory}nameInCharge_${eventId}.json`;
+    
         try {
             const response = await axios.post(
                 ticketUrl,
-                { passCode, eventId },
+                { passCode, eventId, name },
                 {
                     headers: {
                         'Authorization': `Bearer ${API_TOKEN}`,
@@ -60,33 +59,42 @@ const EventDetailsScreen = ({ route, navigation }) => {
                     }
                 }
             );
-
+    
             if (response.status !== 200 || !response.data || !response.data.eventTickets) {
                 throw new Error('Failed to fetch tickets');
             }
-
+    
             const ticketsData = response.data;
             const jsonString = JSON.stringify(ticketsData, null, 2);
+    
+            // Guardar tickets
             await FileSystem.writeAsStringAsync(filePath, jsonString);
-
+    
+            // Guardar nombre localmente
+            const nameData = JSON.stringify({ name }, null, 2);
+            await FileSystem.writeAsStringAsync(filePathNameInCharge, nameData);
+    
+            // Verificar que los archivos existen
             const fileInfo = await FileSystem.getInfoAsync(filePath);
-            if (!fileInfo.exists || fileInfo.size === 0) {
-                throw new Error('Failed to save tickets data');
+            const nameFileInfo = await FileSystem.getInfoAsync(filePathNameInCharge);
+    
+            if (!fileInfo.exists || fileInfo.size === 0 || !nameFileInfo.exists || nameFileInfo.size === 0) {
+                throw new Error('Failed to save data');
             }
-
+    
             Alert.alert("Success", "Tickets downloaded successfully!");
             navigation.navigate('TicketsScreen', { 
                 eventId,
                 ticketsData,
             });
-
+    
         } catch (error) {
             Alert.alert("Error", `Failed to download tickets: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
     };
-
+    
     if (!event) {
         return (
             <View style={styles.loadingContainer}>
@@ -120,26 +128,6 @@ const EventDetailsScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Event Information</Text>
-                    <Text style={styles.info}>Visitors Price: ${event.visitorsPrice || 'N/A'}</Text>
-                    <Text style={styles.info}>Exhibitor Price: ${event.exhibitorPrice || 'N/A'}</Text>
-                    <Text style={styles.info}>Capacity: {event.capacity || 'N/A'} people</Text>
-                </View>
-
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Parking Services</Text>
-                    <Text style={styles.info}>
-                        Free Parking: {event.hasFreeParking ? 'Available' : 'Not Available'}
-                    </Text>
-                    <Text style={styles.info}>
-                        Standard Parking: {event.hasStandardParking ? `$${event.standardParkingPrice}` : 'Not Available'}
-                    </Text>
-                    <Text style={styles.info}>
-                        VIP Parking: {event.hasVIPParking ? `$${event.vipParkingPrice}` : 'Not Available'}
-                    </Text>
-                </View>
-
-                <View style={styles.section}>
                     {isLoading && (
                         <ActivityIndicator 
                             size="large" 
@@ -149,16 +137,20 @@ const EventDetailsScreen = ({ route, navigation }) => {
                     )}
                     <TextInput
                         style={styles.input}
+                        placeholder="Enter your name"
+                        value={name}
+                        onChangeText={setName}
+                        placeholderTextColor="#888"
+                    />
+                    <TextInput
+                        style={styles.input}
                         placeholder="Enter pass code"
                         value={passCode}
                         onChangeText={setPassCode}
                         placeholderTextColor="#888"
                     />
                     <TouchableOpacity 
-                        style={[
-                            styles.downloadButton, 
-                            isLoading && styles.disabledButton
-                        ]}
+                        style={[styles.downloadButton, isLoading && styles.disabledButton]}
                         onPress={fetchAndSaveTickets}
                         disabled={isLoading}
                     >
